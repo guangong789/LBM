@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/yan/LBM/build/cmake_install.cmake",
+		"/home/yan/LBM/build/glfw/cmake_install.cmake",
+		"/home/yan/LBM/build/glfw/src/cmake_install.cmake",
+		"/home/yan/LBM/build/glfw/docs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
