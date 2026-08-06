@@ -52,8 +52,8 @@ static void BM_OMP_AoS(benchmark::State& state) {
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 1}); \
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 2}); \
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 4}); \
-    BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 6}); \
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 8}); \
+    BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 10}); \
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 16}); \
     BENCHMARK(BM_OMP_AoS)->Args({nx, ny, 20});
 

@@ -72,17 +72,17 @@ static void BM_GPU_Baseline_SoA(benchmark::State& state) {
     RunGPUBenchmark<D2Q9_gpu>(state, Layout::SoA);
 }
 
-// BENCHMARK(BM_GPU_Baseline_AoS)
-//     ->Args({512, 256})
-//     ->Args({1024, 512})
-//     ->Args({2048, 1024})
-//     ->Args({4096, 2048})
-//     ->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_GPU_Baseline_AoS)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->Unit(benchmark::kMillisecond);
 
 BENCHMARK(BM_GPU_Baseline_SoA)
-    // ->Args({512, 256})
-    // ->Args({1024, 512})
-    // ->Args({2048, 1024})
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
     ->Args({4096, 2048})
     ->Unit(benchmark::kMillisecond);
 
