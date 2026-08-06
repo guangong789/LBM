@@ -19,6 +19,16 @@ inline void fetchVelocity(const LBMFieldGPU& field, std::vector<float>& ux, std:
     cudaMemcpy(uy.data(), field.uy, cells * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
+inline void fetchDensity(const LBMFieldCPU& field, std::vector<float>& rho) {
+    rho = field.rho;
+}
+
+inline void fetchDensity(const LBMFieldGPU& field, std::vector<float>& rho) {
+    const int cells = field.nx * field.ny;
+    rho.resize(cells);
+    CUDA_CHECK(cudaMemcpy(rho.data(), field.rho, cells * sizeof(float), cudaMemcpyDeviceToHost));
+}
+
 __global__ void buildTextureKernel(const float* ux, const float* uy, float* tex, int nx, int ny);
 
 inline void updateTextureGPU(LBMFieldGPU& field, GLuint texID) {

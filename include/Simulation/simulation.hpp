@@ -6,25 +6,45 @@
 #include <Visualization/texture.hpp>
 #include <D2Q9/D2Q9_gpu.cuh>
 
-inline void compareVelocity(const std::vector<float>& ux_cpu, const std::vector<float>& uy_cpu, const std::vector<float>& ux_gpu, const std::vector<float>& uy_gpu) {
-    int n = ux_cpu.size();
+struct ErrorMetrics {
+    double l2;
+    float max;
+};
+
+inline ErrorMetrics compareField(const std::vector<float>& cpu,
+                                 const std::vector<float>& gpu) {
+    assert(cpu.size() == gpu.size());
 
     float max_err = 0.f;
-    double l2 = 0.0;
+    double squared_error_sum = 0.0;
 
-    for (int i = 0; i < n; ++i) {
-        float du = ux_cpu[i] - ux_gpu[i];
-        float dv = uy_cpu[i] - uy_gpu[i];
-
-        float err = std::sqrt(du*du + dv*dv);
-
+    for (size_t i = 0; i < cpu.size(); ++i) {
+        const float err = std::abs(cpu[i] - gpu[i]);
         max_err = std::max(max_err, err);
-        l2 += err * err;
+        squared_error_sum += static_cast<double>(err) * err;
     }
 
-    l2 = std::sqrt(l2 / n);
+    return {
+        std::sqrt(squared_error_sum / static_cast<double>(cpu.size())),
+        max_err
+    };
+}
 
-    std::cout << std::scientific << "L2 = " << l2 << ", Max = " << max_err << std::endl;
+inline void printValidationErrors(const std::vector<float>& rho_cpu,
+                                  const std::vector<float>& ux_cpu,
+                                  const std::vector<float>& uy_cpu,
+                                  const std::vector<float>& rho_gpu,
+                                  const std::vector<float>& ux_gpu,
+                                  const std::vector<float>& uy_gpu) {
+    const ErrorMetrics rho_error = compareField(rho_cpu, rho_gpu);
+    const ErrorMetrics ux_error = compareField(ux_cpu, ux_gpu);
+    const ErrorMetrics uy_error = compareField(uy_cpu, uy_gpu);
+
+    std::cout << std::scientific
+              << "rho: L2 = " << rho_error.l2 << ", Max = " << rho_error.max
+              << " | ux: L2 = " << ux_error.l2 << ", Max = " << ux_error.max
+              << " | uy: L2 = " << uy_error.l2 << ", Max = " << uy_error.max
+              << std::endl;
 }
 
 template<typename FieldCPU, typename SolverCPU,typename FieldGPU, typename SolverGPU>
@@ -40,8 +60,8 @@ void runValidation() {
     SolverCPU::initialize(cpu);
     SolverGPU::initialize(gpu);
 
-    std::vector<float> ux_cpu, uy_cpu;
-    std::vector<float> ux_gpu, uy_gpu;
+    std::vector<float> rho_cpu, ux_cpu, uy_cpu;
+    std::vector<float> rho_gpu, ux_gpu, uy_gpu;
 
     for (int step = 0; step < totalSteps; ++step) {
         SolverCPU::macro(cpu);
@@ -55,12 +75,18 @@ void runValidation() {
         SolverGPU::bounce_back(gpu);
 
         if (step % 100 == 0) {
+            // The simulation step updates f. Recompute macroscopic quantities so
+            // the values being compared correspond to that updated state.
+            SolverCPU::macro(cpu);
+            SolverGPU::macro(gpu);
 
+            fetchDensity(cpu, rho_cpu);
             fetchVelocity(cpu, ux_cpu, uy_cpu);
+            fetchDensity(gpu, rho_gpu);
             fetchVelocity(gpu, ux_gpu, uy_gpu);
 
             std::cout << "[Step " << step << "] ";
-            compareVelocity(ux_cpu, uy_cpu, ux_gpu, uy_gpu);
+            printValidationErrors(rho_cpu, ux_cpu, uy_cpu, rho_gpu, ux_gpu, uy_gpu);
         }
     }
     std::cout << "Validation finished." << std::endl;

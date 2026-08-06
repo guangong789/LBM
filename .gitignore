@@ -1,4 +1,5 @@
 build/
+build-validation-check/
 _build/
 out/
 Release/
