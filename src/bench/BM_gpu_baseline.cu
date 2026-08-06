@@ -32,7 +32,7 @@ void RunGPUBenchmark(
     LBMFieldGPU field(nx, ny, layout);
     Solver::initialize(field);
 
-    // GPU warm-up，不计入正式测试时间
+    // GPU warm-up
     for (int i = 0; i < warmup_iterations; ++i) {
         Solver::macro(field);
         Solver::collide(field);

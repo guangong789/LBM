@@ -14,7 +14,7 @@ static void RunSerialBenchmark(
     LBMFieldCPU field(nx, ny, layout);
     Solver::initialize(field);
 
-    // Warm-up，不计入正式测试时间
+    // Warm-up
     for (int i = 0; i < 10; ++i) {
         Solver::macro(field);
         Solver::collide(field);
