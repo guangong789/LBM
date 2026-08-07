@@ -22,6 +22,7 @@ set(COMMON_CUDA_FLAGS
     --expt-relaxed-constexpr
     --use_fast_math
     -O3
+    -lineinfo
 )
 
 # OpenMP 支持
@@ -108,6 +109,27 @@ target_compile_options(main PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>:-O3 -march=native>
 )
 
+# Standalone CUDA kernel profiler (no OpenGL or Google Benchmark dependency)
+add_executable(ncu_profile
+    src/profile/ncu_profile.cu
+)
+
+target_include_directories(ncu_profile PRIVATE ${COMMON_INCLUDES})
+
+target_link_libraries(ncu_profile
+    lbm_core
+)
+
+set_target_properties(ncu_profile PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_compile_options(ncu_profile PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
+    $<$<COMPILE_LANGUAGE:CXX>:-O3 -march=native>
+)
+
 # benchmark
 find_package(benchmark REQUIRED)
 
@@ -150,24 +172,24 @@ target_compile_options(benchmark_omp PRIVATE
 )
 
 # benchmark - GPU baseline version (AoS vs SoA)
-add_executable(benchmark_gpu_baseline
-    src/bench/BM_gpu_baseline.cu
+add_executable(benchmark_gpu
+    src/bench/BM_gpu.cu
 )
 
-target_include_directories(benchmark_gpu_baseline PRIVATE ${COMMON_INCLUDES})
+target_include_directories(benchmark_gpu PRIVATE ${COMMON_INCLUDES})
 
-target_link_libraries(benchmark_gpu_baseline
+target_link_libraries(benchmark_gpu
     lbm_core
     benchmark::benchmark
     pthread
 )
 
-set_target_properties(benchmark_gpu_baseline PROPERTIES
+set_target_properties(benchmark_gpu PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
 
-target_compile_options(benchmark_gpu_baseline PRIVATE
+target_compile_options(benchmark_gpu PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
     $<$<COMPILE_LANGUAGE:CXX>:-O3 -march=native>
 )
