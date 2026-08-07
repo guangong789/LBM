@@ -32,7 +32,7 @@ int main() {
         setGPU();
         const int nx = 2048;
         const int ny = 512;
-        LBMFieldGPU field(nx, ny, Layout::AoS);
+        LBMFieldGPU field(nx, ny, Layout::SoA);
         D2Q9_gpu::initialize(field);
         runSimulationGPU(window, field);
     } else if constexpr (backend == Backend::VALIDATE) {

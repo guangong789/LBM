@@ -100,6 +100,7 @@ void runSimulationGPU(GLFWwindow* window, LBMFieldGPU& field) {
     Mesh quad(quadVertices);
 
     const int stepsPerFrame = 5;
+    int totalSteps = 0;
 
     while(!glfwWindowShouldClose(window)) {
         for(int s=0; s<stepsPerFrame; ++s){
@@ -107,6 +108,11 @@ void runSimulationGPU(GLFWwindow* window, LBMFieldGPU& field) {
             D2Q9_gpu::collide(field);
             D2Q9_gpu::stream(field);
             D2Q9_gpu::bounce_back(field);
+
+            ++totalSteps;
+            if (totalSteps % 1000 == 0) {
+                std::cout << "Step: " << totalSteps << std::endl;
+            }
         }
 
         updateTextureGPU(field, texID);
