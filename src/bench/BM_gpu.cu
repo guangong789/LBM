@@ -27,7 +27,7 @@ template <
 >
 void AdvanceGPU(LBMFieldGPU& field, dim3 macro_collide_block) {
     if constexpr (UseMacroCollideStreamPush) {
-        Solver::macro_collide_stream_push(field);
+        Solver::macro_collide_stream_push(field, macro_collide_block);
     } else {
         if constexpr (UseMacroCollide) {
             Solver::macro_collide(field, macro_collide_block);
@@ -241,6 +241,56 @@ static void BM_GPU_MacroCollidePushStream_SoA(
     );
 }
 
+static void BM_GPU_Experimental_FinalFusion_16x16_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA,
+        dim3(16, 16)
+    );
+}
+
+static void BM_GPU_Experimental_FinalFusion_32x4_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 4)
+    );
+}
+
+static void BM_GPU_Experimental_FinalFusion_32x8_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 8)
+    );
+}
+
+static void BM_GPU_Experimental_FinalFusion_32x16_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 16)
+    );
+}
+
+static void BM_GPU_Experimental_FinalFusion_64x4_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA,
+        dim3(64, 4)
+    );
+}
+
 static void BM_GPU_V4_MacroCollide_16x16_SoA(
     benchmark::State& state
 ) {
@@ -375,5 +425,32 @@ REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
 );
 
 #undef REGISTER_V4_MACRO_COLLIDE_BENCHMARK
+
+#define REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(function_name) \
+    BENCHMARK(function_name)                                         \
+        ->Args({512, 256})                                           \
+        ->Args({1024, 512})                                          \
+        ->Args({2048, 1024})                                         \
+        ->Args({4096, 2048})                                         \
+        ->UseManualTime()                                            \
+        ->Unit(benchmark::kMillisecond)
+
+REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(
+    BM_GPU_Experimental_FinalFusion_16x16_SoA
+);
+REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(
+    BM_GPU_Experimental_FinalFusion_32x4_SoA
+);
+REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(
+    BM_GPU_Experimental_FinalFusion_32x8_SoA
+);
+REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(
+    BM_GPU_Experimental_FinalFusion_32x16_SoA
+);
+REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK(
+    BM_GPU_Experimental_FinalFusion_64x4_SoA
+);
+
+#undef REGISTER_EXPERIMENTAL_FINAL_FUSION_BENCHMARK
 
 BENCHMARK_MAIN();

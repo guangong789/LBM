@@ -579,6 +579,59 @@ build verify_macro_collide_stream_push: CXX_EXECUTABLE_LINKER__verify_macro_coll
   TARGET_PDB = verify_macro_collide_stream_push.dbg
   TARGET_SUPPORT_DIR = CMakeFiles/verify_macro_collide_stream_push.dir
 
+# =============================================================================
+# Object build statements for EXECUTABLE target validate_cpu_serial_final_gpu
+
+
+#############################################
+# Order-only phony target for validate_cpu_serial_final_gpu
+
+build cmake_object_order_depends_target_validate_cpu_serial_final_gpu: phony || cmake_object_order_depends_target_lbm_core
+
+build CMakeFiles/validate_cpu_serial_final_gpu.dir/src/validation/validate_cpu_serial_final_gpu.cu.o: CUDA_COMPILER__validate_cpu_serial_final_gpu_unscanned_Release /home/yan/LBM/src/validation/validate_cpu_serial_final_gpu.cu || cmake_object_order_depends_target_validate_cpu_serial_final_gpu
+  CONFIG = Release
+  DEP_FILE = CMakeFiles/validate_cpu_serial_final_gpu.dir/src/validation/validate_cpu_serial_final_gpu.cu.o.d
+  FLAGS = -O3 -DNDEBUG -std=c++20 "--generate-code=arch=compute_86,code=[compute_86,sm_86]" --expt-relaxed-constexpr --use_fast_math -O3 -lineinfo
+  INCLUDES = -I/home/yan/LBM/include -I/home/yan/LBM/glm -I/home/yan/LBM/glad/include -I/usr/local/cuda/include
+  OBJECT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+  OBJECT_FILE_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir/src/validation
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+
+
+# =============================================================================
+# Device Link build statements for EXECUTABLE target validate_cpu_serial_final_gpu
+
+
+#############################################
+# Link the executable CMakeFiles/validate_cpu_serial_final_gpu.dir/cmake_device_link.o
+
+build CMakeFiles/validate_cpu_serial_final_gpu.dir/cmake_device_link.o: CXX_EXECUTABLE_DEVICE_LINKER__validate_cpu_serial_final_gpu_Release CMakeFiles/validate_cpu_serial_final_gpu.dir/src/validation/validate_cpu_serial_final_gpu.cu.o | liblbm_core.a /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a || liblbm_core.a
+  LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG "--generate-code=arch=compute_86,code=[compute_86,sm_86]"
+  LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libpthread.a -lcudadevrt -lcudart_static -lrt -lpthread -ldl
+  LINK_PATH = -L/usr/local/cuda-12.4/targets/x86_64-linux/lib/stubs  -L/usr/local/cuda-12.4/targets/x86_64-linux/lib
+  OBJECT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+  TARGET_FILE = CMakeFiles/validate_cpu_serial_final_gpu.dir/cmake_device_link.o
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+
+# =============================================================================
+# Link build statements for EXECUTABLE target validate_cpu_serial_final_gpu
+
+
+#############################################
+# Link the executable validate_cpu_serial_final_gpu
+
+build validate_cpu_serial_final_gpu: CXX_EXECUTABLE_LINKER__validate_cpu_serial_final_gpu_Release CMakeFiles/validate_cpu_serial_final_gpu.dir/src/validation/validate_cpu_serial_final_gpu.cu.o CMakeFiles/validate_cpu_serial_final_gpu.dir/cmake_device_link.o | liblbm_core.a /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a || liblbm_core.a
+  CONFIG = Release
+  FLAGS = -O3 -DNDEBUG
+  LINK_LIBRARIES = liblbm_core.a  /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so  /usr/lib/x86_64-linux-gnu/libpthread.a  -lcudadevrt  -lcudart_static  -lrt  -lpthread  -ldl
+  LINK_PATH = -L/usr/local/cuda-12.4/targets/x86_64-linux/lib/stubs   -L/usr/local/cuda-12.4/targets/x86_64-linux/lib
+  OBJECT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = validate_cpu_serial_final_gpu
+  TARGET_PDB = validate_cpu_serial_final_gpu.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_cpu_serial_final_gpu.dir
+
 
 #############################################
 # Utility command for edit_cache
@@ -1385,7 +1438,7 @@ build glfw/src/codegen: phony
 #############################################
 # Folder: /home/yan/LBM/build-p0-sm86
 
-build all: phony libglad.a liblbm_core.a main ncu_profile benchmark_serial benchmark_omp benchmark_gpu verify_gpu_optimized verify_sparse_bounce verify_macro_collide_stream_push glfw/all
+build all: phony libglad.a liblbm_core.a main ncu_profile benchmark_serial benchmark_omp benchmark_gpu verify_gpu_optimized verify_sparse_bounce verify_macro_collide_stream_push validate_cpu_serial_final_gpu glfw/all
 
 # =============================================================================
 

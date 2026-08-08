@@ -447,7 +447,22 @@ void D2Q9_gpu::macro_collide(LBMFieldGPU& field, dim3 block) {
 }
 
 void D2Q9_gpu::macro_collide_stream_push(LBMFieldGPU& field) {
-    dim3 block(16, 16);
+    macro_collide_stream_push(field, dim3(16, 16));
+}
+
+void D2Q9_gpu::macro_collide_stream_push(
+    LBMFieldGPU& field,
+    dim3 block
+) {
+    const unsigned int threads_per_block = block.x * block.y * block.z;
+    if (block.x == 0 || block.y == 0 || block.z != 1
+        || threads_per_block > 1024) {
+        std::cerr << "Skipping invalid Macro-Collide Push-Stream block "
+                  << "configuration: "
+                  << block.x << 'x' << block.y << 'x' << block.z << std::endl;
+        return;
+    }
+
     dim3 grid(
         (field.nx + block.x - 1) / block.x,
         (field.ny + block.y - 1) / block.y

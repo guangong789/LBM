@@ -254,3 +254,25 @@ set_target_properties(verify_macro_collide_stream_push PROPERTIES
 target_compile_options(verify_macro_collide_stream_push PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
 )
+
+add_executable(validate_cpu_serial_final_gpu
+    src/validation/validate_cpu_serial_final_gpu.cu
+)
+
+target_include_directories(
+    validate_cpu_serial_final_gpu
+    PRIVATE ${COMMON_INCLUDES}
+)
+
+target_link_libraries(validate_cpu_serial_final_gpu
+    lbm_core
+)
+
+set_target_properties(validate_cpu_serial_final_gpu PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_compile_options(validate_cpu_serial_final_gpu PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
+)
