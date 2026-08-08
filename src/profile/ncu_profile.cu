@@ -18,11 +18,13 @@ struct ProfileConfig {
     int warmup_steps = 20;
     int profile_steps = 10;
     Layout layout = Layout::SoA;
+    bool optimized = false;
 };
 
 void printUsage(const char* program) {
     std::cout << "Usage: " << program
-              << " [--nx N] [--ny N] [--warmup N] [--steps N] [--layout aos|soa]\n";
+              << " [--nx N] [--ny N] [--warmup N] [--steps N]"
+              << " [--layout aos|soa] [--path baseline|optimized]\n";
 }
 
 ProfileConfig parseArgs(int argc, char** argv) {
@@ -52,6 +54,13 @@ ProfileConfig parseArgs(int argc, char** argv) {
                 std::cerr << "Unsupported layout: " << value << '\n';
                 std::exit(EXIT_FAILURE);
             }
+        } else if (arg == "--path") {
+            if (value == "baseline") config.optimized = false;
+            else if (value == "optimized") config.optimized = true;
+            else {
+                std::cerr << "Unsupported path: " << value << '\n';
+                std::exit(EXIT_FAILURE);
+            }
         } else {
             std::cerr << "Unknown option: " << arg << '\n';
             printUsage(argv[0]);
@@ -66,10 +75,15 @@ ProfileConfig parseArgs(int argc, char** argv) {
     return config;
 }
 
-void advance(LBMFieldGPU& field) {
-    D2Q9_gpu::macro(field);
-    D2Q9_gpu::collide(field);
-    D2Q9_gpu::stream(field);
+void advance(LBMFieldGPU& field, bool optimized) {
+    if (optimized) {
+        D2Q9_gpu::macro_collide(field);
+        D2Q9_gpu::stream_v3(field);
+    } else {
+        D2Q9_gpu::macro(field);
+        D2Q9_gpu::collide(field);
+        D2Q9_gpu::stream(field);
+    }
     D2Q9_gpu::bounce_back(field);
 }
 
@@ -83,17 +97,19 @@ int main(int argc, char** argv) {
     D2Q9_gpu::initialize(field);
 
     for (int step = 0; step < config.warmup_steps; ++step) {
-        advance(field);
+        advance(field, config.optimized);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
 
     std::cout << "Profiling " << config.profile_steps << " step(s), grid "
               << config.nx << 'x' << config.ny << ", layout "
-              << (config.layout == Layout::SoA ? "SoA" : "AoS") << '\n';
+              << (config.layout == Layout::SoA ? "SoA" : "AoS")
+              << ", path " << (config.optimized ? "optimized" : "baseline")
+              << '\n';
 
     CUDA_CHECK(cudaProfilerStart());
     for (int step = 0; step < config.profile_steps; ++step) {
-        advance(field);
+        advance(field, config.optimized);
     }
     CUDA_CHECK(cudaDeviceSynchronize());
     CUDA_CHECK(cudaProfilerStop());

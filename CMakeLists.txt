@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 4.0)
+set(CMAKE_CUDA_ARCHITECTURES 86)
 project(LBM LANGUAGES C CXX CUDA)
 
 set(CMAKE_C_STANDARD 23)
@@ -192,4 +193,64 @@ set_target_properties(benchmark_gpu PROPERTIES
 target_compile_options(benchmark_gpu PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
     $<$<COMPILE_LANGUAGE:CXX>:-O3 -march=native>
+)
+
+add_executable(verify_gpu_optimized
+    src/test/verify_gpu_optimized.cu
+)
+
+target_include_directories(verify_gpu_optimized PRIVATE ${COMMON_INCLUDES})
+
+target_link_libraries(verify_gpu_optimized
+    lbm_core
+)
+
+set_target_properties(verify_gpu_optimized PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_compile_options(verify_gpu_optimized PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
+)
+
+add_executable(verify_sparse_bounce
+    src/test/verify_sparse_bounce.cu
+)
+
+target_include_directories(verify_sparse_bounce PRIVATE ${COMMON_INCLUDES})
+
+target_link_libraries(verify_sparse_bounce
+    lbm_core
+)
+
+set_target_properties(verify_sparse_bounce PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_compile_options(verify_sparse_bounce PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
+)
+
+add_executable(verify_macro_collide_stream_push
+    src/test/verify_macro_collide_stream_push.cu
+)
+
+target_include_directories(
+    verify_macro_collide_stream_push
+    PRIVATE ${COMMON_INCLUDES}
+)
+
+target_link_libraries(verify_macro_collide_stream_push
+    lbm_core
+)
+
+set_target_properties(verify_macro_collide_stream_push PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+)
+
+target_compile_options(verify_macro_collide_stream_push PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:${COMMON_CUDA_FLAGS}>
 )

@@ -1,0 +1,32 @@
+2026-08-08T10:01:45+08:00
+Running ./build-p0-sm86/benchmark_gpu
+Run on (20 X 2918.4 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 0.29, 0.36, 0.21
+-----------------------------------------------------------------------------------------------------------
+Benchmark                                                 Time             CPU   Iterations UserCounters...
+-----------------------------------------------------------------------------------------------------------
+BM_GPU_Baseline_AoS/512/256/manual_time                8.55 ms         8.65 ms           68 InnerIterations=50 MLUPS=766.211M/s
+BM_GPU_Baseline_AoS/1024/512/manual_time               31.0 ms         31.2 ms           23 InnerIterations=50 MLUPS=845.09M/s
+BM_GPU_Baseline_AoS/2048/1024/manual_time               118 ms          118 ms            6 InnerIterations=50 MLUPS=887.344M/s
+BM_GPU_Baseline_AoS/4096/2048/manual_time               469 ms          469 ms            2 InnerIterations=50 MLUPS=894.79M/s
+BM_GPU_Baseline_SoA/512/256/manual_time                4.85 ms         4.92 ms          144 InnerIterations=50 MLUPS=1.35184G/s
+BM_GPU_Baseline_SoA/1024/512/manual_time               17.9 ms         18.0 ms           39 InnerIterations=50 MLUPS=1.46855G/s
+BM_GPU_Baseline_SoA/2048/1024/manual_time              69.4 ms         69.5 ms           10 InnerIterations=50 MLUPS=1.51171G/s
+BM_GPU_Baseline_SoA/4096/2048/manual_time               276 ms          276 ms            3 InnerIterations=50 MLUPS=1.51989G/s
+BM_GPU_MacroCollide_AoS/512/256/manual_time            6.73 ms         6.81 ms          106 InnerIterations=50 MLUPS=973.167M/s
+BM_GPU_MacroCollide_AoS/1024/512/manual_time           23.3 ms         23.4 ms           30 InnerIterations=50 MLUPS=1.12675G/s
+BM_GPU_MacroCollide_AoS/2048/1024/manual_time          89.3 ms         89.5 ms            8 InnerIterations=50 MLUPS=1.17375G/s
+BM_GPU_MacroCollide_AoS/4096/2048/manual_time           356 ms          356 ms            2 InnerIterations=50 MLUPS=1.17933G/s
+BM_GPU_Stream_Baseline_SoA/512/256/manual_time         3.55 ms         3.61 ms          198 InnerIterations=50 MLUPS=1.84775G/s
+BM_GPU_Stream_Baseline_SoA/1024/512/manual_time        12.8 ms         12.9 ms           55 InnerIterations=50 MLUPS=2.04887G/s
+BM_GPU_Stream_Baseline_SoA/2048/1024/manual_time       49.9 ms         50.1 ms           14 InnerIterations=50 MLUPS=2.1005G/s
+BM_GPU_Stream_Baseline_SoA/4096/2048/manual_time        198 ms          198 ms            4 InnerIterations=50 MLUPS=2.1208G/s
+BM_GPU_Stream_V3_SoA/512/256/manual_time               3.52 ms         3.59 ms          199 InnerIterations=50 MLUPS=1.86006G/s
+BM_GPU_Stream_V3_SoA/1024/512/manual_time              12.8 ms         12.9 ms           55 InnerIterations=50 MLUPS=2.05126G/s
+BM_GPU_Stream_V3_SoA/2048/1024/manual_time             50.3 ms         50.4 ms           14 InnerIterations=50 MLUPS=2.08492G/s
+BM_GPU_Stream_V3_SoA/4096/2048/manual_time              199 ms          199 ms            4 InnerIterations=50 MLUPS=2.10949G/s

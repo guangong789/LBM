@@ -12,6 +12,8 @@ struct LBMFieldGPU {
     float* ux = nullptr;
     float* uy = nullptr;
     unsigned char* is_cylinder = nullptr;
+    int* boundary_indices = nullptr;
+    int boundary_count = 0;
 
     int nx = 0, ny = 0;
     Layout layout;
@@ -47,6 +49,7 @@ struct LBMFieldGPU {
         cudaFree(ux);
         cudaFree(uy);
         cudaFree(is_cylinder);
+        cudaFree(boundary_indices);
         cudaFree(d_tex);
     }
 

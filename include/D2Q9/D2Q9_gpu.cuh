@@ -19,8 +19,13 @@ struct D2Q9_gpu {
     // LBM steps
     static void macro(LBMFieldGPU& field);
     static void collide(LBMFieldGPU& field);
+    static void macro_collide(LBMFieldGPU& field);
+    static void macro_collide(LBMFieldGPU& field, dim3 block);
+    static void macro_collide_stream_push(LBMFieldGPU& field);
     static void stream(LBMFieldGPU& field);
+    static void stream_v3(LBMFieldGPU& field);
     static void bounce_back(LBMFieldGPU& field);
+    static void bounce_back_sparse(LBMFieldGPU& field);
 
     // initialization
     static void initialize(LBMFieldGPU& field);

@@ -18,99 +18,49 @@ inline void CheckCuda(cudaError_t result, const char* operation) {
     }
 }
 
-__device__ __constant__ int benchmark_cx[9] = {
-    0, 1, 0, -1, 0, 1, -1, -1, 1
-};
-
-__device__ __constant__ int benchmark_cy[9] = {
-    0, 0, 1, 0, -1, 1, 1, -1, -1
-};
-
-__device__ __constant__ float benchmark_w[9] = {
-    4.f / 9.f,
-    1.f / 9.f, 1.f / 9.f, 1.f / 9.f, 1.f / 9.f,
-    1.f / 36.f, 1.f / 36.f, 1.f / 36.f, 1.f / 36.f
-};
-
-__global__ void macro_collide_kernel(LBMFieldView v) {
-    const int x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= v.nx || y >= v.ny) return;
-
-    const int cell = y * v.nx + x;
-    const int cells = v.nx * v.ny;
-    float distributions[9];
-
-    #pragma unroll
-    for (int k = 0; k < 9; ++k) {
-        const int id = (v.layout == Layout::AoS)
-            ? cell * 9 + k
-            : k * cells + cell;
-        distributions[k] = v.f[id];
-    }
-
-    // Preserve the baseline collision behavior inside solid cylinder cells.
-    if (v.is_cylinder[cell]) {
-        #pragma unroll
-        for (int k = 0; k < 9; ++k) {
-            const int id = (v.layout == Layout::AoS)
-                ? cell * 9 + k
-                : k * cells + cell;
-            v.f_next[id] = distributions[k];
+template <
+    typename Solver,
+    bool UseMacroCollide,
+    bool UseStreamV3,
+    bool UseSparseBounce = false,
+    bool UseMacroCollideStreamPush = false
+>
+void AdvanceGPU(LBMFieldGPU& field, dim3 macro_collide_block) {
+    if constexpr (UseMacroCollideStreamPush) {
+        Solver::macro_collide_stream_push(field);
+    } else {
+        if constexpr (UseMacroCollide) {
+            Solver::macro_collide(field, macro_collide_block);
+        } else {
+            Solver::macro(field);
+            Solver::collide(field);
         }
-        return;
+
+        if constexpr (UseStreamV3) {
+            Solver::stream_v3(field);
+        } else {
+            Solver::stream(field);
+        }
     }
 
-    float rho = 0.f;
-    float momentum_x = 0.f;
-    float momentum_y = 0.f;
-
-    #pragma unroll
-    for (int k = 0; k < 9; ++k) {
-        rho += distributions[k];
-        momentum_x += distributions[k] * benchmark_cx[k];
-        momentum_y += distributions[k] * benchmark_cy[k];
-    }
-
-    if (rho < 1e-6f) rho = 1e-6f;
-
-    const float ux = momentum_x / rho;
-    const float uy = momentum_y / rho;
-    const float u2 = ux * ux + uy * uy;
-
-    #pragma unroll
-    for (int k = 0; k < 9; ++k) {
-        const int id = (v.layout == Layout::AoS)
-            ? cell * 9 + k
-            : k * cells + cell;
-        const float cu = 3.f * (
-            ux * benchmark_cx[k] + uy * benchmark_cy[k]
-        );
-        const float feq = benchmark_w[k] * rho * (
-            1.f + cu + 0.5f * cu * cu - 1.5f * u2
-        );
-        float updated = distributions[k]
-            - (distributions[k] - feq) / D2Q9_gpu::tau;
-
-        if (isnan(updated)) updated = feq;
-        v.f_next[id] = updated;
+    if constexpr (UseSparseBounce) {
+        Solver::bounce_back_sparse(field);
+    } else {
+        Solver::bounce_back(field);
     }
 }
 
-void MacroCollide(LBMFieldGPU& field) {
-    dim3 block(16, 16);
-    dim3 grid(
-        (field.nx + 15) / 16,
-        (field.ny + 15) / 16
-    );
-    macro_collide_kernel<<<grid, block>>>(field.view());
-    CheckCuda(cudaGetLastError(), "macro_collide_kernel launch");
-}
-
-template <typename Solver>
+template <
+    typename Solver,
+    bool UseMacroCollide,
+    bool UseStreamV3,
+    bool UseSparseBounce = false,
+    bool UseMacroCollideStreamPush = false
+>
 void RunGPUBenchmark(
     benchmark::State& state,
-    Layout layout
+    Layout layout,
+    dim3 macro_collide_block = dim3(16, 16)
 ) {
     const int nx = static_cast<int>(state.range(0));
     const int ny = static_cast<int>(state.range(1));
@@ -123,9 +73,16 @@ void RunGPUBenchmark(
 
     // GPU warm-up
     for (int i = 0; i < warmup_iterations; ++i) {
-        MacroCollide(field);
-        Solver::stream(field);
-        Solver::bounce_back(field);
+        AdvanceGPU<
+            Solver,
+            UseMacroCollide,
+            UseStreamV3,
+            UseSparseBounce,
+            UseMacroCollideStreamPush
+        >(
+            field,
+            macro_collide_block
+        );
     }
 
     CheckCuda(
@@ -153,9 +110,16 @@ void RunGPUBenchmark(
         );
 
         for (int i = 0; i < inner_iterations; ++i) {
-            MacroCollide(field);
-            Solver::stream(field);
-            Solver::bounce_back(field);
+            AdvanceGPU<
+                Solver,
+                UseMacroCollide,
+                UseStreamV3,
+                UseSparseBounce,
+                UseMacroCollideStreamPush
+            >(
+                field,
+                macro_collide_block
+            );
         }
 
         CheckCuda(
@@ -214,25 +178,136 @@ void RunGPUBenchmark(
         static_cast<double>(inner_iterations);
 }
 
-static void BM_GPU_MacroCollide_AoS(
+static void BM_GPU_Baseline_AoS(
     benchmark::State& state
 ) {
-    RunGPUBenchmark<D2Q9_gpu>(
+    RunGPUBenchmark<D2Q9_gpu, false, false>(
         state,
         Layout::AoS
     );
 }
 
-static void BM_GPU_MacroCollide_SoA(
+static void BM_GPU_Baseline_SoA(
     benchmark::State& state
 ) {
-    RunGPUBenchmark<D2Q9_gpu>(
+    RunGPUBenchmark<D2Q9_gpu, false, false>(
         state,
         Layout::SoA
     );
 }
 
+static void BM_GPU_MacroCollide_AoS(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, false>(
+        state,
+        Layout::AoS
+    );
+}
+
+static void BM_GPU_Stream_Baseline_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, false>(
+        state,
+        Layout::SoA
+    );
+}
+
+static void BM_GPU_Stream_V3_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA
+    );
+}
+
+static void BM_GPU_SparseBounce_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true>(
+        state,
+        Layout::SoA
+    );
+}
+
+static void BM_GPU_MacroCollidePushStream_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true, true, true>(
+        state,
+        Layout::SoA
+    );
+}
+
+static void BM_GPU_V4_MacroCollide_16x16_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA,
+        dim3(16, 16)
+    );
+}
+
+static void BM_GPU_V4_MacroCollide_32x4_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 4)
+    );
+}
+
+static void BM_GPU_V4_MacroCollide_32x8_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 8)
+    );
+}
+
+static void BM_GPU_V4_MacroCollide_32x16_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA,
+        dim3(32, 16)
+    );
+}
+
+static void BM_GPU_V4_MacroCollide_64x4_SoA(
+    benchmark::State& state
+) {
+    RunGPUBenchmark<D2Q9_gpu, true, true>(
+        state,
+        Layout::SoA,
+        dim3(64, 4)
+    );
+}
+
 }  // namespace
+
+BENCHMARK(BM_GPU_Baseline_AoS)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->UseManualTime()
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_GPU_Baseline_SoA)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->UseManualTime()
+    ->Unit(benchmark::kMillisecond);
 
 BENCHMARK(BM_GPU_MacroCollide_AoS)
     ->Args({512, 256})
@@ -242,12 +317,63 @@ BENCHMARK(BM_GPU_MacroCollide_AoS)
     ->UseManualTime()
     ->Unit(benchmark::kMillisecond);
 
-BENCHMARK(BM_GPU_MacroCollide_SoA)
+BENCHMARK(BM_GPU_Stream_Baseline_SoA)
     ->Args({512, 256})
     ->Args({1024, 512})
     ->Args({2048, 1024})
     ->Args({4096, 2048})
     ->UseManualTime()
     ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_GPU_Stream_V3_SoA)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->UseManualTime()
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_GPU_SparseBounce_SoA)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->UseManualTime()
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_GPU_MacroCollidePushStream_SoA)
+    ->Args({512, 256})
+    ->Args({1024, 512})
+    ->Args({2048, 1024})
+    ->Args({4096, 2048})
+    ->UseManualTime()
+    ->Unit(benchmark::kMillisecond);
+
+#define REGISTER_V4_MACRO_COLLIDE_BENCHMARK(function_name) \
+    BENCHMARK(function_name)                               \
+        ->Args({512, 256})                                 \
+        ->Args({1024, 512})                                \
+        ->Args({2048, 1024})                               \
+        ->Args({4096, 2048})                               \
+        ->UseManualTime()                                  \
+        ->Unit(benchmark::kMillisecond)
+
+REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
+    BM_GPU_V4_MacroCollide_16x16_SoA
+);
+REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
+    BM_GPU_V4_MacroCollide_32x4_SoA
+);
+REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
+    BM_GPU_V4_MacroCollide_32x8_SoA
+);
+REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
+    BM_GPU_V4_MacroCollide_32x16_SoA
+);
+REGISTER_V4_MACRO_COLLIDE_BENCHMARK(
+    BM_GPU_V4_MacroCollide_64x4_SoA
+);
+
+#undef REGISTER_V4_MACRO_COLLIDE_BENCHMARK
 
 BENCHMARK_MAIN();
